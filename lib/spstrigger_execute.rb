@@ -9,9 +9,31 @@ require 'xmlregistry_objects'
 
 class SPSTriggerExecute
 
-  def initialize(url_lookup)
-
-    @patterns = Dynarex.new(url_lookup).to_h
+  def initialize(x, reg=nil, polyrexdoc=nil)
+    
+    
+    dx = if x.is_a? Dynarex then
+    
+      x
+      
+    else
+      
+      buffer, _ = RXFHelper.read x      
+      Dynarex.new buffer
+      
+    end
+    
+    @patterns = dx.to_h
+    
+    if reg and polyrexdoc then
+      
+      xro = XMLRegistryObjects.new(reg, polyrexdoc)
+      
+      @h = xro.to_h      
+      define_methods = @h.keys.map {|x| "def #{x}() @h[:#{x}] end"}      
+      instance_eval define_methods.join("\n")      
+      
+    end
 
   end
 
@@ -57,9 +79,10 @@ class SPSTriggerExecute
         {}
       end
 
-      if conditions.length > 0 then
-        puts '**   h : ' + h.inspect
-        time = time
+      if result and conditions.length > 0 then
+        
+        success = eval conditions
+        result = nil unless success
       end
 
       result ? r << result : r
@@ -108,7 +131,7 @@ class SPSTriggerExecute
   def time()
 
     t = Time.now
-
+    
     def t.within?(times)
       ChronicBetween.new(times).within? Time.now
     end
