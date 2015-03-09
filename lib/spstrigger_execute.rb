@@ -9,9 +9,9 @@ require 'xmlregistry_objects'
 
 class SPSTriggerExecute
 
-  def initialize(x, reg=nil, polyrexdoc=nil)
+  def initialize(x, reg=nil, polyrexdoc=nil, logfile: nil)
     
-    
+    @log = Logger.new logfile,'daily' if logfile
     dx = if x.is_a? Dynarex then
     
       x
@@ -24,15 +24,15 @@ class SPSTriggerExecute
     end
     
     @patterns = dx.to_h
-    
+        
     if reg and polyrexdoc then
-      
+          
       xro = XMLRegistryObjects.new(reg, polyrexdoc)
       
       @h = xro.to_h      
       define_methods = @h.keys.map {|x| "def #{x}() @h[:#{x}] end"}      
       instance_eval define_methods.join("\n")      
-      
+      log 'define_methods : ' + self.public_methods.sort.inspect
     end
 
   end
@@ -43,6 +43,11 @@ class SPSTriggerExecute
   end
 
   alias mae match_and_execute
+  
+  def run(s)
+    instance_eval s
+  end
+    
 
   private
 
@@ -81,7 +86,9 @@ class SPSTriggerExecute
 
       if result and conditions.length > 0 then
         
+        log 'conditions: ' + conditions.inspect
         success = eval conditions
+        log 'success : '  + success.inspect
         result = nil unless success
       end
 
@@ -90,6 +97,12 @@ class SPSTriggerExecute
     end
   end
 
+  def log(s)
+    if @log then
+      @logger.debug s
+    end
+  end
+  
   def prepare_jobs(results)
 
     results.inject([]) do |r,h|
@@ -98,33 +111,39 @@ class SPSTriggerExecute
       a += h[:topic].captures if h[:topic] && h[:topic].captures.any?
       a += h[:msg].captures if h[:msg]
       
-      job = @patterns[h[:index].to_i - 1][:job]
-      job_args = job.split + a
-      
-      if job[/^\/\//] then
+      jobs = @patterns[h[:index].to_i - 1][:job]
 
-        r << [:rse, job_args]
+      jobs.split(/\s*;\s*/).each do |job|
+
+        job_args = job.split + a
         
-      else
+        if job[/^\/\//] then
 
-        topic_message = job.gsub(/\$\d/) do |x| 
-
-          i = x[/\d$/].to_i - 1
-          x.sub(/\$\d/, a[i])
-        end
-
-        topic_message = topic_message\
-          .gsub(/![Tt]ime/,Time.now.strftime("%a %H:%M%P"))\
-          .gsub(/![Dd]ate/,Time.now.strftime("%d %b"))        
-
-        topic_message.split(/\s*;\s*/).each do |m|
+          r << [:rse, job_args]
           
-          r << [:sps, m]
+        elsif job[/^[\w\/]+:/]
 
+          topic_message = job.gsub(/\$\d/) do |x| 
+
+            i = x[/\d$/].to_i - 1
+            x.sub(/\$\d/, a[i])
+          end
+
+          topic_message = topic_message\
+            .gsub(/![Tt]ime/,Time.now.strftime("%a %H:%M%P"))\
+            .gsub(/![Dd]ate/,Time.now.strftime("%d %b"))        
+
+          
+          r << [:sps, topic_message]          
+        else
+          
+          r << [:ste, job]
+          
         end
-        
       end
+
       r  
+      
     end
   end
 
@@ -138,4 +157,5 @@ class SPSTriggerExecute
 
     t
   end
+    
 end
