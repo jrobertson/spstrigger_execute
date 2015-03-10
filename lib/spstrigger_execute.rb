@@ -121,7 +121,7 @@ class SPSTriggerExecute
 
           r << [:rse, job_args]
           
-        elsif job[/^[\w\/]+:/]
+        elsif job[/^[$\w\/]+:/]
 
           topic_message = job.gsub(/\$\d/) do |x| 
 
