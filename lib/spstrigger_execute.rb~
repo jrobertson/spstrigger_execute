@@ -18,8 +18,8 @@ class SPSTriggerExecute
       
     else
       
-      buffer, _ = RXFHelper.read x      
-      Dynarex.new buffer
+      buffer, _ = RXFHelper.read x
+      buffer[/^<?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
       
     end
     
@@ -121,7 +121,7 @@ class SPSTriggerExecute
 
           r << [:rse, job_args]
           
-        elsif job[/^[\w\/]+:/]
+        elsif job[/^[$\w\/]+:/]
 
           topic_message = job.gsub(/\$\d/) do |x| 
 
