@@ -19,11 +19,13 @@ class SPSTriggerExecute
     else
       
       buffer, _ = RXFHelper.read x
-      buffer[/^<?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
+      puts 'buffer : ' + buffer.inspect
+      buffer[/^<\?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
       
     end
     
     @patterns = dx.to_h
+    puts '@patterns : ' + @patterns.inspect
         
     if reg and polyrexdoc then
           
@@ -111,10 +113,14 @@ class SPSTriggerExecute
       a += h[:topic].captures if h[:topic] && h[:topic].captures.any?
       a += h[:msg].captures if h[:msg]
       
+      puts 'row :  ' + @patterns[h[:index].to_i - 1].inspect
       jobs = @patterns[h[:index].to_i - 1][:job]
+      puts 'jobs : ' + jobs.inspect
 
       jobs.split(/\s*;\s*/).each do |job|
 
+        
+        puts 'job : ' + job.inspect
         job_args = job.split + a
         
         if job[/^\/\//] then
