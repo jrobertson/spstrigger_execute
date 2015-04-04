@@ -19,7 +19,7 @@ class SPSTriggerExecute
     else
       
       buffer, _ = RXFHelper.read x
-      buffer[/^<?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
+      buffer[/^<\?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
       
     end
     

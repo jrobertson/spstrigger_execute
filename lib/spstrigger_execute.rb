@@ -19,14 +19,12 @@ class SPSTriggerExecute
     else
       
       buffer, _ = RXFHelper.read x
-      puts 'buffer : ' + buffer.inspect
       buffer[/^<\?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
       
     end
     
     @patterns = dx.to_h
-    puts '@patterns : ' + @patterns.inspect
-        
+
     if reg and polyrexdoc then
           
       xro = XMLRegistryObjects.new(reg, polyrexdoc)
@@ -89,7 +87,21 @@ class SPSTriggerExecute
       if result and conditions.length > 0 then
         
         log 'conditions: ' + conditions.inspect
-        success = eval conditions
+
+        named_match = message.match(/#{msg}/)
+        
+        variable_assignment = if named_match then
+                  
+          named_match.names.inject('') do |r, name|
+
+            m = msg =~ /\?<#{name}\>\\d+/ ? 'to_i' : 'to_s'
+            r << "#{name} = named_match[:#{name}].#{m}\n"            
+          end
+          
+        else ''  
+        end
+
+        success = eval (variable_assignment + conditions)
         log 'success : '  + success.inspect
         result = nil unless success
       end
@@ -113,14 +125,10 @@ class SPSTriggerExecute
       a += h[:topic].captures if h[:topic] && h[:topic].captures.any?
       a += h[:msg].captures if h[:msg]
       
-      puts 'row :  ' + @patterns[h[:index].to_i - 1].inspect
       jobs = @patterns[h[:index].to_i - 1][:job]
-      puts 'jobs : ' + jobs.inspect
 
       jobs.split(/\s*;\s*/).each do |job|
 
-        
-        puts 'job : ' + job.inspect
         job_args = job.split + a
         
         if job[/^\/\//] then
