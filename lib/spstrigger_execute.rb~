@@ -24,7 +24,7 @@ class SPSTriggerExecute
     end
     
     @patterns = dx.to_h
-        
+
     if reg and polyrexdoc then
           
       xro = XMLRegistryObjects.new(reg, polyrexdoc)
@@ -87,7 +87,21 @@ class SPSTriggerExecute
       if result and conditions.length > 0 then
         
         log 'conditions: ' + conditions.inspect
-        success = eval conditions
+
+        named_match = message.match(/#{msg}/)
+        
+        variable_assignment = if named_match then
+                  
+          named_match.names.inject('') do |r, name|
+
+            m = msg =~ /\?<#{name}\>\\d+/ ? 'to_i' : 'to_s'
+            r << "#{name} = named_match[:#{name}].#{m}\n"            
+          end
+          
+        else ''  
+        end
+
+        success = eval (variable_assignment + conditions)
         log 'success : '  + success.inspect
         result = nil unless success
       end
