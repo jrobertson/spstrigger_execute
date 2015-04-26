@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'spstrigger_execute'
-  s.version = '0.4.1'
+  s.version = '0.4.2'
   s.summary = 'An SPS client built for reponding to messages which match keywords and conditions.'
   s.authors = ['James Robertson']
   s.files = Dir['lib/**/*.rb']

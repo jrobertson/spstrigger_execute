@@ -12,18 +12,20 @@ class SPSTriggerExecute
   def initialize(x, reg=nil, polyrexdoc=nil, logfile: nil)
     
     @log = Logger.new logfile,'daily' if logfile
-    dx = if x.is_a? Dynarex then
     
-      x
+    @patterns = if x.is_a? Dynarex then
+    
+      x.to_h
       
+    elsif x.is_a? Array
+      x
     else
       
       buffer, _ = RXFHelper.read x
-      buffer[/^<\?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
+      dx = buffer[/^<\?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
+      dx.to_h
       
-    end
-    
-    @patterns = dx.to_h
+    end    
 
     if reg and polyrexdoc then
           

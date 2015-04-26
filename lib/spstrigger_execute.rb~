@@ -56,7 +56,7 @@ class SPSTriggerExecute
     @patterns.map.with_index.inject([]) do |r, row|
 
       h, i = row
-      topic, msg,  conditions, job, index = h.values
+      topic, msg,  conditions, job, index = h.values.values_at 0,1,2,3,-1
       
       index ||= i + 1
       
@@ -92,16 +92,17 @@ class SPSTriggerExecute
         
         variable_assignment = if named_match then
                   
-          named_match.names.inject('') do |r, name|
+          named_match.names.inject('') do |rs, name|
 
             m = msg =~ /\?<#{name}\>\\d+/ ? 'to_i' : 'to_s'
-            r << "#{name} = named_match[:#{name}].#{m}\n"            
+            rs << "#{name} = named_match[:#{name}].#{m}\n"            
           end
           
         else ''  
         end
 
         success = eval (variable_assignment + conditions)
+
         log 'success : '  + success.inspect
         result = nil unless success
       end
