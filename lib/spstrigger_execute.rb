@@ -143,7 +143,7 @@ class SPSTriggerExecute
           topic_message = job.gsub(/\$\d/) do |x| 
 
             i = x[/\d$/].to_i - 1
-            x.sub(/\$\d/, a[i])
+            x.sub(/\$\d/, a[i].to_s)
           end
 
           topic_message = topic_message\
