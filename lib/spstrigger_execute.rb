@@ -30,7 +30,6 @@ class SPSTriggerExecute
     if reg and polyrexdoc then
           
       xro = XMLRegistryObjects.new(reg, polyrexdoc)
-      
       @h = xro.to_h      
       define_methods = @h.keys.map {|x| "def #{x}() @h[:#{x}] end"}      
       instance_eval define_methods.join("\n")      
@@ -58,14 +57,16 @@ class SPSTriggerExecute
     @patterns.map.with_index.inject([]) do |r, row|
 
       h, i = row
-      topic, msg,  conditions, job, index = h.values.values_at 0,1,2,3,-1
+
+      topic, msg,  conditions, job, index = \
+                      %i(topic msg conditions job index).map {|x| h[x].to_s }
       
       index ||= i + 1
       
       # note: the index is only present if there is a duplicate Dynarex record default key
 
       t, m = topic.length > 0, msg.length > 0
-
+      
       result = if t && m then
 
         r1 = topicx.match(/#{topic}/)
@@ -79,7 +80,7 @@ class SPSTriggerExecute
         {topic: r1, index: index} if r1
 
       elsif m then
-      
+
         r2 = message.match(/#{msg}/)      
         {msg: r2, index: index} if r2
       else
