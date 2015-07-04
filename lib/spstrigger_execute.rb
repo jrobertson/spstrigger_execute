@@ -58,8 +58,8 @@ class SPSTriggerExecute
 
       h, i = row
 
-      topic, msg,  conditions, job, index = \
-                      %i(topic msg conditions job index).map {|x| h[x].to_s }
+      topic, msg,  conditions, job = \
+                      %i(topic msg conditions job).map {|x| h[x].to_s }
       
       index ||= i + 1
       
@@ -85,7 +85,7 @@ class SPSTriggerExecute
         {msg: r2, index: index} if r2
       else
         {}
-      end
+      end      
 
       if result and conditions.length > 0 then
         
