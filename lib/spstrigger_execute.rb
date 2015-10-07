@@ -9,9 +9,10 @@ require 'xmlregistry_objects'
 
 class SPSTriggerExecute
 
-  def initialize(x, reg=nil, polyrexdoc=nil, logfile: nil)
+  def initialize(x, reg=nil, polyrexdoc=nil, rws=nil, logfile: nil)
     
     @log = Logger.new logfile,'daily' if logfile
+    @rws = rws
     
     @patterns = if x.is_a? Dynarex then
     
@@ -121,6 +122,14 @@ class SPSTriggerExecute
     end
   end
   
+  # not yet implemented
+  def method_missing(method_name, *args)
+    puts 'method_missing called'
+    job = args.shift
+    # Rsc object call goes here
+    @rws.run_job package=method_name, job, {}, args
+  end  
+  
   def prepare_jobs(results)
 
     results.inject([]) do |r,h|
@@ -155,7 +164,12 @@ class SPSTriggerExecute
           r << [:sps, topic_message]          
         else
           
-          r << [:ste, job]
+          statement = job.gsub(/\$\d/) do |x| 
+            i = x[/\d$/].to_i - 1
+            x.sub(/\$\d/, a[i].to_s)
+          end
+          
+          r << [:ste, statement]
           
         end
       end
