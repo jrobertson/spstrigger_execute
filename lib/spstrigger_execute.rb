@@ -9,10 +9,11 @@ require 'xmlregistry_objects'
 
 class SPSTriggerExecute
 
-  def initialize(x, reg=nil, polyrexdoc=nil, rws=nil, logfile: nil)
+  def initialize(x, reg=nil, polyrexdoc=nil, rws=nil, log: nil)
     
-    @log = Logger.new logfile,'daily' if logfile
-    @rws = rws
+    log.info 'SPSTriggerExecute/initialize: active' if log
+    
+    @rws, @log = rws, log
     
     @patterns = if x.is_a? Dynarex then
     
@@ -23,24 +24,35 @@ class SPSTriggerExecute
     else
       
       buffer, _ = RXFHelper.read x
-      dx = buffer[/^<\?dynarex /] ? Dynarex.new.import(buffer) :  Dynarex.new(buffer)
+      dx = buffer[/^<\?dynarex /] ? Dynarex.new.import(buffer) : \
+          Dynarex.new(buffer)
       dx.to_h
       
     end    
-
+    
+    
+    
     if reg and polyrexdoc then
-          
-      xro = XMLRegistryObjects.new(reg, polyrexdoc)
+      log.info 'SPSTriggerExecute/initialize: before reg' if log      
+      puts 'reg: ' + reg.inspect
+      xro = XMLRegistryObjects.new(reg, polyrexdoc, log: log)
+      log.info 'SPSTriggerExecute/initialize: after reg' if log      
       @h = xro.to_h      
       define_methods = @h.keys.map {|x| "def #{x}() @h[:#{x}] end"}      
       instance_eval define_methods.join("\n")      
-      log 'define_methods : ' + self.public_methods.sort.inspect
+      
+      if log then
+        log.info 'SPSTriggerExecute/initialize: define_methods : ' + 
+            self.public_methods.sort.inspect
+      end
     end
 
   end
 
-  def match_and_execute(topicx, message)
-    results = find_match topicx, message
+  def match_and_execute(topic: nil, message: message)
+
+    @log.info 'SPSTriggerExecute/match_and_execute: active' if @log
+    results = find_match topic, message
     prepare_jobs(results)
   end
 
@@ -53,8 +65,9 @@ class SPSTriggerExecute
 
   private
 
-  def find_match(topicx, message)
-
+  def find_match(topicx=nil, message)
+    
+    
     @patterns.map.with_index.inject([]) do |r, row|
 
       h, i = row
@@ -64,18 +77,19 @@ class SPSTriggerExecute
       
       index ||= i + 1
       
-      # note: the index is only present if there is a duplicate Dynarex record default key
+      # note: the index is only present if there is a duplicate
+      #       Dynarex record default key
 
       t, m = topic.length > 0, msg.length > 0
       
-      result = if t && m then
+      result = if topicx && t && m then
 
         r1 = topicx.match(/#{topic}/)
         r2 = message.match(/#{msg}/)
 
         {topic: r1, msg: r2, index: index} if r1 && r2
 
-      elsif t then
+      elsif topicx && t then
 
         r1 = topicx.match(/#{topic}/)
         {topic: r1, index: index} if r1
@@ -90,7 +104,10 @@ class SPSTriggerExecute
 
       if result and conditions.length > 0 then
         
-        log 'conditions: ' + conditions.inspect
+        if @log then
+          @log.info 'SPSTriggerExecute/find_match: conditions: ' + 
+              conditions.inspect
+        end
 
         named_match = message.match(/#{msg}/)
         
@@ -105,9 +122,14 @@ class SPSTriggerExecute
         else ''  
         end
 
+
         success = eval (variable_assignment + conditions)
 
-        log 'success : '  + success.inspect
+        if @log then
+          @log.info 'SPSTriggerExecute/find_match: success : '  + 
+              success.inspect
+        end
+        
         result = nil unless success
       end
 
@@ -116,30 +138,36 @@ class SPSTriggerExecute
     end
   end
 
-  def log(s)
-    if @log then
-      @logger.debug s
-    end
-  end
   
   # not yet implemented
+=begin  
   def method_missing(method_name, *args)
-    puts 'method_missing called'
+
     job = args.shift
     # Rsc object call goes here
+    @log.debug 'package: ' + package.inspect
     @rws.run_job package=method_name, job, {}, args
   end  
+=end  
   
   def prepare_jobs(results)
+    
+    @log.info 'SPSTriggerExecute/prepare_jobs: active' if @log
 
     results.inject([]) do |r,h|
+      
+      if @log then
+        @log.info 'SPSTriggerExecute/prepare_jobs: inside inject h: ' + 
+            h.inspect 
+      end
 
       a = []
       a += h[:topic].captures if h[:topic] && h[:topic].captures.any?
       a += h[:msg].captures if h[:msg]
       
       jobs = @patterns[h[:index].to_i - 1][:job]
-
+      
+      
       jobs.split(/\s*;\s*/).each do |job|
 
         job_args = job.split + a
@@ -173,7 +201,9 @@ class SPSTriggerExecute
           
         end
       end
-
+      
+      @log.info 'SPSTriggerExecute/prepare_jobs: result: '  if @log
+      
       r  
       
     end
