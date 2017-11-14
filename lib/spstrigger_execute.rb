@@ -217,6 +217,23 @@ class SPSTriggerExecute
       ChronicBetween.new(times).within? Time.now
     end
 
+    def t.>(x)
+      x.is_a?(String) ? self > Chronic.parse(x) : super(x)
+    end
+
+    def t.<(x)
+      x.is_a?(String) ? self < Chronic.parse(x) : super(x)
+    end    
+    
+    def t.to_s()
+      "##{super}#"
+    end
+
+    def t.inspect()
+      self.to_s
+    end
+    
+
     t
   end
     
