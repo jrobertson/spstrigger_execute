@@ -26,7 +26,7 @@ class SPSTriggerExecute
       buffer, _ = RXFHelper.read x
       dx = buffer[/^<\?dynarex /] ? Dynarex.new.import(buffer) : \
           Dynarex.new(buffer)
-      dx.to_h
+      dx.to_a
       
     end    
     
@@ -224,15 +224,6 @@ class SPSTriggerExecute
     def t.<(x)
       x.is_a?(String) ? self < Chronic.parse(x) : super(x)
     end    
-    
-    def t.to_s()
-      "##{super}#"
-    end
-
-    def t.inspect()
-      self.to_s
-    end
-    
 
     t
   end
