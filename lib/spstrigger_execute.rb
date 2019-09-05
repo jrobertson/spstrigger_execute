@@ -165,6 +165,10 @@ class SPSTriggerExecute
       a += h[:topic].captures if h[:topic] && h[:topic].captures.any?
       a += h[:msg].captures if h[:msg]
       
+      params = {}
+      params.merge!(h[:topic].named_captures) if h[:topic]
+      params.merge!(h[:msg].named_captures) if h[:msg] 
+      
       jobs = @patterns[h[:index].to_i - 1][:job]
       
       
@@ -174,7 +178,7 @@ class SPSTriggerExecute
         
         if job[/^\/\//] then
 
-          r << [:rse, job_args]
+          r << [:rse, job_args, params]
           
         elsif job[/^[$\w\/]+:/]
 
