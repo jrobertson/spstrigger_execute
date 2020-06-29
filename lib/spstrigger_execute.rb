@@ -30,8 +30,6 @@ class SPSTriggerExecute
       
     end    
     
-    
-    
     if reg and polyrexdoc then
       log.info 'SPSTriggerExecute/initialize: before reg' if log      
       puts 'reg: ' + reg.inspect
@@ -179,6 +177,11 @@ class SPSTriggerExecute
         if job[/^\/\//] then
 
           r << [:rse, job_args, params]
+
+          
+        elsif job[/^rse:\/\//]
+          
+          r << [:rse_uri, job]          
           
         elsif job[/^[$\w\/]+:/]
 
